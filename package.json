@@ -1,0 +1,34 @@
+{
+  "name": "localforge-opencode",
+  "version": "0.3.0",
+  "private": false,
+  "type": "module",
+  "description": "Repository-agnostic local coding harness for OpenCode v2",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./server": "./index.js"
+  },
+  "bin": {
+    "localforge": "./cli.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test",
+    "doctor": "node cli.js doctor",
+    "pack:check": "npm pack --dry-run"
+  },
+  "files": [
+    "index.js",
+    "cli.js",
+    "src",
+    "content",
+    "manifest.json",
+    "README.md",
+    "docs",
+    "LICENSE"
+  ],
+  "license": "MIT"
+}

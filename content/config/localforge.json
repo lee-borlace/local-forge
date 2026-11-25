@@ -1,0 +1,23 @@
+{
+  "defaultProfile": "off",
+  "profiles": [],
+  "maxReadLines": 120,
+  "maxOutputChars": 8000,
+  "maxFileBytes": 2097152,
+  "maxProcessMs": 120000,
+  "maxStoredOutputBytes": 1048576,
+  "repeatLimit": 3,
+  "effectiveContextTokens": 65536,
+  "outputReserveTokens": 8192,
+  "contextWarningFraction": 0.75,
+  "rtk": {
+    "enabled": false,
+    "executable": "rtk"
+  },
+  "extraTools": [],
+  "trustedProjects": [],
+  "recipeOverrides": [],
+  "telemetry": true,
+  "maxTaskChars": 6000,
+  "outputRetentionDays": 7
+}

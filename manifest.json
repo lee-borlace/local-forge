@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "agents": [
+    "localforge-strict.md",
+    "localforge-balanced.md"
+  ],
+  "skills": [
+    "localforge-navigation",
+    "localforge-debugging",
+    "localforge-verification"
+  ],
+  "defaultConfig": "content/config/localforge.json",
+  "serena": {
+    "package": "serena-agent==2.1.0",
+    "python": "3.13",
+    "server": "localforge_serena",
+    "template": "content/config/serena-mcp.json"
+  },
+  "helper": [
+    "LICENSE",
+    "package.json",
+    "cli.js",
+    "manifest.json",
+    "src/config.js",
+    "src/process.js",
+    "src/files.js",
+    "src/adapters.js",
+    "src/state.js",
+    "src/install.js",
+    "content/config/localforge.json",
+    "content/config/serena-mcp.json",
+    "content/agents/localforge-strict.md",
+    "content/agents/localforge-balanced.md"
+  ]
+}
