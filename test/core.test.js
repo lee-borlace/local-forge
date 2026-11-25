@@ -41,3 +41,9 @@ test('tool caps adapt to the model window and stay at ceilings when it is unknow
   assert.equal(modelWindow({limit:{context:0}}),null);assert.equal(modelWindow(undefined),null);
   assert.equal('effectiveContextTokens' in DEFAULTS,false);
 });
+
+import {serenaDefinition} from '../src/install.js';
+test('Serena MCP definition pins the protocol revision Serena serves', () => {
+  const def=serenaDefinition(path.resolve('.'),'serena');
+  assert.equal(def.protocol,'2026-07-28');assert.equal(def.command[0],'serena');assert.equal(def.type,'local');
+});

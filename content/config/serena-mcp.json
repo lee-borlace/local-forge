@@ -1,5 +1,6 @@
 {
   "type": "local",
+  "protocol": "2026-07-28",
   "command": [
     "serena",
     "start-mcp-server",
