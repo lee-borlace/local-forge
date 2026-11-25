@@ -81,3 +81,7 @@ If only the old ZIP exists and was never installed, nothing is required. Otherwi
 ## Development and troubleshooting
 
 From a source checkout `node cli.js plan` or `node cli.js repair --dry-run` shows the file plan without changes; `node cli.js repair` stages only native files and the helper (not the runtime plugin). For package development configure the absolute source directory as a plugin through OpenCode's documented `plugins` array. `npm test` runs offline tests. `npm pack --dry-run` lists the package. The installed helper's `doctor` checks local binaries and detected recipes, not a real model round trip. `/localforge-doctor` reports runtime agent/MCP registry status. Neither claims that a connection or coding outcome is correct without live verification.
+
+## Using alongside other OpenCode setups
+
+LocalForge changes no OpenCode JSON, default agent, model or provider, and its profile defaults to `off`, so it does not alter another setup until you select `localforge-strict` or `localforge-balanced` (or a configured profile matches the model). Under those profiles the `context` hook removes every tool that is not native, an `lf_*` tool, a read-only Serena tool or listed in `extraTools` in `LF/config.json`; tools from other plugins (for example web or delete tools) are hidden unless added there. Check that a permission block such as `"*": "deny"` in your global configuration does not also deny the `lf_*` tools and that subagents offered to a LocalForge agent are acceptable under its shell policy; both are items in docs/SMOKE-TEST.md.

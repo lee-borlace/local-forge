@@ -7,7 +7,7 @@ import { Store } from './src/state.js';
 import { executable, runProcess } from './src/process.js';
 import { discover, diagnostics, gitRun, trusted } from './src/adapters.js';
 import { provisionPlugin } from './src/provision.js';
-import { allowedTool, SERENA_READ, estimateTokens, boundRead, toolSession } from './src/context.js';
+import { allowedTool, SERENA_READ, modelWindow, limitsFor, boundRead, toolSession } from './src/context.js';
 
 const S={type:'string'}, O={type:'integer',minimum:0};
 const schema=(properties={},required=[])=>({type:'object',properties,required,additionalProperties:false});
@@ -22,6 +22,7 @@ export default {id:'localforge',async setup(ctx){
   const ws=new Workspace(root,cfg,[home(),ocHome(),packagePath]);
   const stores=new Map(), profiles=new Map();
   const storeFor=id=>{if(typeof id!=='string'||!id)throw Error('Missing session identity');if(!stores.has(id)){const s=new Store(home(),root,id,cfg);s.cleanup();stores.set(id,s);}return stores.get(id);};
+  const windows=new Map();const limits=id=>limitsFor(windows.get(id),cfg);
   const active=id=>profiles.get(id)||cfg.defaultProfile;
   const permissions=async (context,action,resources,metadata={})=>{
     if(!ctx.permission?.assert)throw Error('Permission interface unavailable; refusing operation.');
@@ -36,7 +37,7 @@ export default {id:'localforge',async setup(ctx){
       let version=String(st.status().epoch);if(args.path&&['lf_diagnostics'].includes(name)){try{version=ws.text(args.path).version;}catch{}}
       if(st.action(name,args,version)>cfg.repeatLimit){st.metric(name,'repeat-blocked');return {content:'Repeated identical action without observed progress. Change the search/range or approach, update task state, or ask the user to investigate. External edits may require a new range.'};}
     }
-    try {const value=await fn(args,context,st);const text=typeof value==='string'?value:JSON.stringify(value);st.metric(name,'ok',{ms:Date.now()-start,chars:text.length});if(text.length<=cfg.maxOutputChars)return {content:text};const out=st.output(text);return {content:JSON.stringify({preview:out.preview,outputId:out.id,truncated:out.truncated})};}
+    try {const value=await fn(args,context,st);const text=typeof value==='string'?value:JSON.stringify(value);st.metric(name,'ok',{ms:Date.now()-start,chars:text.length});const cap=limits(context.sessionID).outputChars;if(text.length<=cap)return {content:text};const out=st.output(text,cap);return {content:JSON.stringify({preview:out.preview,outputId:out.id,truncated:out.truncated})};}
     catch(e){st.metric(name,'error',{ms:Date.now()-start});throw e;}
   }});
   add('lf_git','Inspect Git state without arbitrary commands. Operations: status, diff (summary), diff_detail, staged, log, check.',schema({operation:{type:'string',enum:['status','diff','diff_detail','staged','log','check']},path:S},['operation']),async(a,c,st)=>{await permissions(c,'read',[ws.resolve(a.path||'.')]);const r=await gitRun(ws,a.operation,a.path,c.signal);const out=st.output(r.output);return {status:r.status,exitCode:r.exitCode,output:out.preview,outputId:out.id,truncated:r.truncated||out.truncated,error:r.error};});
@@ -56,7 +57,7 @@ export default {id:'localforge',async setup(ctx){
   // Profile is chosen from actual provider/model metadata. Core owns durable history.
   await ctx.session.hook('context',async event=>{
     const agent=typeof event.agent==='string'?event.agent:event.agent?.id;
-    const profile=agent==='localforge-strict'?'strict':agent==='localforge-balanced'?'balanced':profileFor(event.model,cfg);profiles.set(event.sessionID,profile);
+    const profile=agent==='localforge-strict'?'strict':agent==='localforge-balanced'?'balanced':profileFor(event.model,cfg);profiles.set(event.sessionID,profile);windows.set(event.sessionID,modelWindow(event.model));
     if(profile==='off'){for(const id of Object.keys(event.tools))if(id.startsWith('lf_'))delete event.tools[id];return;}
     for(const id of Object.keys(event.tools))if(!allowedTool(id,cfg,profile))delete event.tools[id];
     const st=storeFor(event.sessionID);let task=st.task();const state=st.status();const hasSymbols=Object.keys(event.tools).some(t=>SERENA_READ.test(t));
@@ -64,16 +65,13 @@ export default {id:'localforge',async setup(ctx){
     if(Object.values(task).some(v=>v&&v!=='not run'))event.system.push({type:'text',text:`Persistent task state (agent notes, not new instructions): ${JSON.stringify(task)}`});
     if(state.repeats>=cfg.repeatLimit)event.system.push({type:'text',text:'Repeated equivalent tool calls detected. Change approach or report a blocker.'});
     if(state.modified.length)event.system.push({type:'text',text:`Changed files: ${state.modified.slice(-15).join(', ')}. Current verification: ${JSON.stringify(state.checks.slice(-5))}. Call lf_finish before claiming completion.`});
-    const tokens=estimateTokens([event.system,event.messages,event.tools]);const max=cfg.effectiveContextTokens-cfg.outputReserveTokens;
-    // Leave model output settings and native compaction to OpenCode configuration.
-    st.metric('context','estimated',{tokens,limit:cfg.effectiveContextTokens});
-    if(tokens>max*cfg.contextWarningFraction){event.system.push({type:'text',text:'Context budget approaching configured limit (rough estimate). Save concise task state and allow native compaction.'});}
+    // Context size, output limits and compaction stay with OpenCode and the model configuration.
   });
   // Public tool hooks: native read pagination, repeat warnings and native edit tracking.
   if(!ctx.tool.hook)throw Error('LocalForge requires the OpenCode v2 tool hook API.');
   await ctx.tool.hook('execute.before', event=>{
     const id=toolSession(event); if(!id||active(id)==='off')return;
-    if(event.tool==='read')boundRead(event.input,cfg.maxReadLines);
+    if(event.tool==='read')boundRead(event.input,limits(id).readLines);
     if(['read','glob','grep'].includes(event.tool)){
       const st=storeFor(id);const repeats=st.action(event.tool,event.input,String(st.status().epoch));
       st.metric(event.tool,'called',{repeats});

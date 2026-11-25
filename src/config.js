@@ -11,8 +11,7 @@ export const DEFAULTS = Object.freeze({
   profiles: [],
   maxReadLines: 120, maxOutputChars: 8000, maxFileBytes: 2097152,
   maxProcessMs: 120000, maxStoredOutputBytes: 1048576,
-  repeatLimit: 3, effectiveContextTokens: 65536, outputReserveTokens: 8192,
-  contextWarningFraction: 0.75, 
+  repeatLimit: 3,
   rtk: { enabled: false, executable: 'rtk' },
   extraTools: [], trustedProjects: [], recipeOverrides: [],
   telemetry: true, maxTaskChars: 6000, outputRetentionDays: 7,
@@ -30,9 +29,8 @@ export function readJson(file, fallback) {
 export function loadConfig(dir=home()) {
   const raw=readJson(path.join(dir,'config.json'),{});
   const cfg={...DEFAULTS,...raw,rtk:{...DEFAULTS.rtk,...raw.rtk}};
-  const bounds={maxReadLines:[10,500],maxOutputChars:[1000,50000],maxFileBytes:[1024,10000000],maxProcessMs:[1000,1800000],maxStoredOutputBytes:[8192,10000000],repeatLimit:[2,20],effectiveContextTokens:[4096,2000000],outputReserveTokens:[512,1000000],maxTaskChars:[1000,20000],outputRetentionDays:[1,90],contextWarningFraction:[0.4,0.95]};
+  const bounds={maxReadLines:[10,500],maxOutputChars:[1000,50000],maxFileBytes:[1024,10000000],maxProcessMs:[1000,1800000],maxStoredOutputBytes:[8192,10000000],repeatLimit:[2,20],maxTaskChars:[1000,20000],outputRetentionDays:[1,90]};
   for(const [k,[lo,hi]] of Object.entries(bounds)) if(!Number.isFinite(cfg[k])||cfg[k]<lo||cfg[k]>hi) throw Error(`Invalid configuration: ${k} must be ${lo}–${hi}`);
-  if(cfg.outputReserveTokens>=cfg.effectiveContextTokens) throw Error('outputReserveTokens must be smaller than effectiveContextTokens');
   for(const p of [cfg.defaultProfile,...cfg.profiles.map(p=>p.profile)]) if(!['strict','balanced','off'].includes(p)) throw Error(`Unknown profile: ${p}`);
   for(const k of ['profiles','extraTools','trustedProjects','recipeOverrides']) if(!Array.isArray(cfg[k])) throw Error(`${k} must be an array`);
   return cfg;

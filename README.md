@@ -27,7 +27,7 @@ Run `/localforge-doctor` in OpenCode. If Serena is missing, run `/localforge-set
 | Working methodology | Bundled native Markdown agents and skills |
 | Shell policy | Native permissions + per-request tool filtering; exceptional human-reviewed CLI fallback |
 | Project discovery | Read-only manifest detection, fixed verification recipes |
-| Context economy | Bounded native reads, curated tool catalogue, bounded custom outputs, optional upstream DCP |
+| Context economy | Native reads and custom outputs capped in proportion to the active model's declared window (static ceilings when it is not exposed), curated tool catalogue, optional upstream DCP. LocalForge sets no context size and leaves compaction to OpenCode. |
 | Diagnostics | Existing Serena diagnostics where exposed; standalone JSON/JS/Python checks; discovered builds/tests |
 | State and evidence | Persistent session scratchpad, observed edit/verification tracking, repeat detection and local metrics |
 | Lifecycle | Native OpenCode package installation/update/removal; LocalForge managed-file reconciliation |
@@ -76,7 +76,7 @@ OpenCode itself writes the package configuration/cache when you install/update/r
 | `src/provision.js` | Plugin lifecycle glue: agent reload, skill/MCP registration and user commands; native config alone cannot safely reconcile packaged payloads |
 | `src/install.js` | Hash-based reconciliation, manifest, locks, backup, cleanup and fixed prerequisite installation; no code generation or arbitrary script execution |
 | `src/config.js` | Resolve global paths, validate config, choose profile, atomic JSON and SHA-256; shared by runtime and human CLI |
-| `src/context.js` | Tool allowlist, read clamp, approximate context budget; native tools retained, not reimplemented |
+| `src/context.js` | Tool allowlist, read/output caps scaled to the model's declared window; native tools retained, not reimplemented |
 | `src/files.js` | Path/credential guard and bounded text access for custom diagnostics/discovery; not a general file editing tool |
 | `src/process.js` | Fixed-argv process wrapper, timeout, bounded captured output and concise presentation; avoids model-authored shell for routine commands |
 | `src/adapters.js` | Discover project capabilities and fixed build/test/check recipes, Git read-only actions, standalone diagnostics |

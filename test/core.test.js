@@ -31,3 +31,13 @@ test('shell fallback creates only a pending record and rejects other session acc
 test('strict model profile hides shell, code mode, subagents, unknown tools',()=>{for(const tool of ['shell','execute','subagent','webfetch','other_tool','serena_replace_symbol_body'])assert.equal(allowedTool(tool,DEFAULTS,'strict'),false);for(const tool of ['edit','read','lf_request_shell','localforge_serena_find_symbol'])assert.equal(allowedTool(tool,DEFAULTS,'strict'),true);assert.equal(profileFor({providerID:'anthropic',id:'whatever'},DEFAULTS),'off');assert.equal(profileFor({providerID:'local',id:'qwen'},{...DEFAULTS,profiles:[{provider:'local',profile:'strict'}]}),'strict');assert.equal(profileFor({providerID:'unknown',id:'qwen'},DEFAULTS),'off');});
 test('git inspection works in disposable repository',async t=>{const {root,ws}=fixture(t);const g=spawnSync('git',['init','-q'],{cwd:root});if(g.status!==0)return t.skip('git unavailable');file(root,'note.txt','hello');const r=await gitRun(ws,'status');assert.equal(r.status,'passed');assert.match(r.output,/note.txt/);});
 test('native read pagination capped with existing offset preserved',()=>{const a={path:'a',offset:120,limit:2000};boundRead(a,120);assert.deepEqual(a,{path:'a',offset:120,limit:120});const b={path:'b'};boundRead(b,120);assert.equal(b.limit,120);const c={limit:3};boundRead(c,120);assert.equal(c.limit,3);});
+
+import {modelWindow,limitsFor} from '../src/context.js';
+test('tool caps adapt to the model window and stay at ceilings when it is unknown', () => {
+  assert.deepEqual(limitsFor(null,DEFAULTS),{readLines:DEFAULTS.maxReadLines,outputChars:DEFAULTS.maxOutputChars});
+  assert.deepEqual(limitsFor(modelWindow({limit:{context:131072,output:8192}}),DEFAULTS),{readLines:120,outputChars:8000});
+  const small=limitsFor(modelWindow({limit:{context:8192,input:4096,output:2048}}),DEFAULTS);
+  assert.equal(small.readLines,42);assert.equal(small.outputChars,2000);
+  assert.equal(modelWindow({limit:{context:0}}),null);assert.equal(modelWindow(undefined),null);
+  assert.equal('effectiveContextTokens' in DEFAULTS,false);
+});
